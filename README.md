@@ -29,7 +29,7 @@ The patching tools replace only the BMP pixel data. By default, they put the sam
 
 ## Windows wizard
 
-The graphical wizard can connect to the printer over SSH, download the current partition, preview both embedded images, choose artwork, and prepare a patched image. One explicit confirmation starts the backup, upload and hash checks, flash, read-back verification, and automatic reboot. It then reconnects over SSH to confirm the printer returned, with a three-minute timeout instead of waiting indefinitely. The backup is checked against the printer-side copy before flashing.
+The graphical wizard can connect to the printer over SSH, download the current partition, preview both embedded images, choose artwork, and prepare a patched image. One click on **Back up, flash & restart** starts the backup, upload and hash checks, flash, read-back verification, and automatic reboot. It then reconnects over SSH to confirm the printer returned, with a three-minute timeout instead of waiting indefinitely. The backup is checked against the printer-side copy before flashing.
 
 Install Python 3.10 or newer. On Windows, make sure the Python installer includes **Tcl/Tk**. Then open PowerShell in this folder and run:
 
