@@ -321,7 +321,7 @@ class QidiSplashTool:
         client.load_system_host_keys()
         for (host, key_type), key in self.trusted_keys.items():
             client.get_host_keys().add(host, key_type, key)
-        client.set_missing_host_key_policy(AskHostKeyPolicy(self))
+        client.set_missing_host_key_policy(AskHostKeyPolicy())
         try:
             client.connect(address, username=username, password=password or None, timeout=12, banner_timeout=12, auth_timeout=20)
         except Exception:
