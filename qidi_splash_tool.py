@@ -554,14 +554,6 @@ class QidiSplashTool:
         if local_image.stat().st_size != P5_SIZE:
             messagebox.showerror("Wrong image size", f"Expected {P5_SIZE:,} bytes.", parent=self.root)
             return
-        if not messagebox.askyesno(
-            "Start Q2 splash update",
-            f"This will back up, flash, verify, then restart the printer.\n\n"
-            f"Printer: {username}@{address}\nImage: {local_image.name}\n"
-            f"SHA-256: {expected_hash}\n\nStart the complete process?",
-            parent=self.root,
-        ):
-            return
         suffix = uuid.uuid4().hex[:10]
         remote_patch = f"/home/{username}/qidi-splash-{suffix}-patched.img"
         remote_backup = f"/home/{username}/qidi-splash-{suffix}-before-flash.img"
