@@ -98,7 +98,7 @@ Do not interrupt the write. If the read-back hash differs, do not reboot; invest
 
 ## Example artwork
 
-![Q2 boot splash artwork example](docs/images/example-splash.png)
+![Q2 boot splash artwork example](docs/images/example-splash.jpg)
 
 *Example artwork included with permission from the project owner. It is cropped and resized to the panel's native 480 × 272 resolution before patching.*
 
