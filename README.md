@@ -40,6 +40,8 @@ py qidi_splash_tool.py
 
 Enter your printer's IP address, SSH user (usually `mks`), and password in the wizard. The password is held in memory only. When prompted about an SSH host key, compare its fingerprint through a trusted channel before accepting.
 
+![Wizard screenshot](docs/images/screenshot-wizard.png)
+
 ## Terminal workflow (Windows and Linux)
 
 Install Python 3.10 or newer and the packages listed in `requirements.txt`. Linux users may also need their distribution's `python3-tk` package for the graphical wizard; the terminal tools do not need Tkinter.
@@ -112,9 +114,9 @@ Do not interrupt the write. If the read-back hash differs, do not reboot; invest
 
 ## Example artwork
 
-![Q2 boot splash artwork example](docs/images/example-splash.jpg)
+![Q2 boot splash original](docs/images/logo.bmp) ![Q2 boot splash artwork example](docs/images/example-splash.jpg)
 
-*Example artwork included with permission from the project owner. It is cropped and resized to the panel's native 480 × 272 resolution before patching.*
+*Original boor splash and an example artwork included with permission from the project owner. It is cropped and resized to the panel's native 480 × 272 resolution before patching.*
 
 ## Included tools
 
