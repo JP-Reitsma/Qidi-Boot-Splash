@@ -2,6 +2,20 @@
 
 Unofficial tools to inspect and replace the boot splash images on a QIDI Q2. The tested offsets and timing below were confirmed on one Q2; other firmware versions and printer models are not yet verified. This project is not affiliated with QIDI.
 
+## Hardware compatibility
+
+This project has been tested on one QIDI Q2 only. QIDI's public documentation does not identify the application-processor variant for every production revision, and this project has not verified other Q2 revisions or the Q2C. Do not assume that the same processor, partition layout, or splash offsets apply just because a printer is sold as a Q2.
+
+Before using the tools on another printer, inspect it over SSH and compare its board model, storage layout, and exact partition size with the tested device:
+
+```sh
+tr -d '\\000' </proc/device-tree/model; echo
+lsblk -b -o NAME,SIZE,TYPE,MOUNTPOINT
+sudo blockdev --getsize64 /dev/mmcblk0p5
+```
+
+The tested partition is exactly 9,437,184 bytes, with valid splash BMPs at the offsets listed below. A matching size alone does not prove compatibility. If the board model, partition, size, or extracted BMP headers differ—or you cannot verify them—stop and do not flash. The wizard's structural checks are not a substitute for confirming the hardware and firmware revision.
+
 ## What is in `p5.img`?
 
 `p5.img` is one 9 MiB image of the printer's `/dev/mmcblk0p5` partition. It contains two embedded 480 × 272, uncompressed 24-bit BMP splash images. It is not a bundle of two `.img` files.
