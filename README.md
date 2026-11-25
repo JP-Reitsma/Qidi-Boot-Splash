@@ -122,7 +122,7 @@ Do not interrupt the write. If the read-back hash differs, do not reboot; invest
 
 ![Q2 boot splash original](docs/images/logo.bmp) ![Q2 boot splash artwork example](docs/images/example-splash.jpg)
 
-*Original boot splash and an example artwork included with permission from the project owner. It is cropped and resized to the panel's native 480 × 272 resolution before patching.*
+*Original boot splash and an example artwork included with permission from the project owner.*
 
 ## Included tools
 
