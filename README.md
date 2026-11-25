@@ -9,7 +9,7 @@ This project has been tested on one QIDI Q2 only. QIDI's public documentation do
 Before using the tools on another printer, inspect it over SSH and compare its board model, storage layout, and exact partition size with the tested device:
 
 ```sh
-tr -d '\\000' </proc/device-tree/model; echo
+tr -d '\000' </proc/device-tree/model; echo
 lsblk -b -o NAME,SIZE,TYPE,MOUNTPOINT
 sudo blockdev --getsize64 /dev/mmcblk0p5
 ```
