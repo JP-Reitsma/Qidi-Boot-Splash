@@ -1,0 +1,13 @@
+# Personal and firmware data — never commit these
+__pycache__/
+*.py[cod]
+.venv/
+*.img
+*.bin
+*.bmp
+output/
+owl/
+qidi/
+test/
+final/
+
