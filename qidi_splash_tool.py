@@ -7,6 +7,7 @@ import ipaddress
 import io
 import shlex
 import threading
+import time
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -113,7 +114,6 @@ class QidiSplashTool:
         self.patched_path: Path | None = None
         self.busy = False
         self.trusted_keys = {}
-        self.flash_verified = False
         self._photo_refs = []
 
         self.ip_var = tk.StringVar()
@@ -251,15 +251,13 @@ class QidiSplashTool:
         ttk.Label(card, text="Back up, flash, and verify", style="CardTitle.TLabel").pack(anchor="w")
         ttk.Label(
             card,
-            text="The tool backs up /dev/mmcblk0p5, checks the upload hash, flashes only after confirmation, then reads the partition back and checks it again.",
+            text="One click backs up /dev/mmcblk0p5, checks the image and backup, flashes, verifies the read-back, then restarts and reconnects to the printer.",
             style="Small.TLabel", wraplength=980,
         ).pack(anchor="w", pady=(5, 10))
         self._connection_fields(card)
         ttk.Label(card, textvariable=self.output_var, style="Small.TLabel", wraplength=1000).pack(anchor="w", padx=12, pady=(5, 10))
-        self.flash_button = ttk.Button(card, text="Back up and flash p5.img", style="Accent.TButton", command=self.flash_image)
+        self.flash_button = ttk.Button(card, text="Back up, flash & restart", style="Accent.TButton", command=self.flash_image)
         self.flash_button.pack(anchor="w", padx=12)
-        self.reboot_button = ttk.Button(card, text="Reboot printer…", command=self.reboot_printer, state="disabled")
-        self.reboot_button.pack(anchor="w", padx=12, pady=(8, 0))
         self.log = tk.Text(self.flash_tab, height=12, wrap="word", background="#152333", foreground="#edf4fa", insertbackground="#ffffff", relief="flat", font=("Consolas", 9))
         self.log.pack(fill="both", expand=True, pady=(4, 0))
         self._log("Ready. The tool will not store your SSH password.")
@@ -556,10 +554,19 @@ class QidiSplashTool:
         if local_image.stat().st_size != P5_SIZE:
             messagebox.showerror("Wrong image size", f"Expected {P5_SIZE:,} bytes.", parent=self.root)
             return
+        if not messagebox.askyesno(
+            "Start Q2 splash update",
+            f"This will back up, flash, verify, then restart the printer.\n\n"
+            f"Printer: {username}@{address}\nImage: {local_image.name}\n"
+            f"SHA-256: {expected_hash}\n\nStart the complete process?",
+            parent=self.root,
+        ):
+            return
         suffix = uuid.uuid4().hex[:10]
         remote_patch = f"/home/{username}/qidi-splash-{suffix}-patched.img"
         remote_backup = f"/home/{username}/qidi-splash-{suffix}-before-flash.img"
         remote_verify = f"/home/{username}/qidi-splash-{suffix}-verify.img"
+
         def job():
             client = self._connect(address, username, password)
             try:
@@ -574,7 +581,8 @@ class QidiSplashTool:
                 uploaded_hash = self._sudo(client, password, f"sha256sum {shlex.quote(remote_patch)}").split()[0].lower()
                 if uploaded_hash != expected_hash.lower():
                     raise RuntimeError("Upload hash differs from the local image. Nothing was flashed.")
-                self._log("Making a backup of the current p5 partition…")
+
+                self._log("Making and checking a backup of the current p5 partition…")
                 self._sudo(client, password, f"dd if={REMOTE_PARTITION} of={shlex.quote(remote_backup)} bs=1M conv=fsync")
                 with client.open_sftp() as sftp:
                     if sftp.stat(remote_backup).st_size != P5_SIZE:
@@ -585,14 +593,12 @@ class QidiSplashTool:
                     sftp.get(remote_backup, str(backup_path))
                 if backup_path.stat().st_size != P5_SIZE:
                     raise RuntimeError("Downloaded backup has the wrong size. Nothing was flashed.")
+                remote_backup_hash = self._sudo(client, password, f"sha256sum {shlex.quote(remote_backup)}").split()[0].lower()
+                local_backup_hash = sha256_file(backup_path).lower()
+                if local_backup_hash != remote_backup_hash:
+                    raise RuntimeError("Downloaded backup hash does not match the printer copy. Nothing was flashed.")
                 self._log(f"Verified backup saved to {backup_path}.")
-                if not self.ask_yes_no(
-                    "Confirm Q2 flash",
-                    f"Ready to write the boot splash partition.\n\nPrinter: {username}@{address}\n"
-                    f"Partition: {REMOTE_PARTITION}\nImage: {local_image.name}\nSHA-256: {expected_hash}\n"
-                    f"Backup: {backup_path}\n\nFlash now?",
-                ):
-                    raise RuntimeError("Flash cancelled. The backup was made; the partition was not changed.")
+
                 self._log("Writing the new image to /dev/mmcblk0p5…")
                 self._sudo(client, password, f"dd if={shlex.quote(remote_patch)} of={REMOTE_PARTITION} bs=1M conv=fsync")
                 self._log("Reading the partition back for verification…")
@@ -600,45 +606,62 @@ class QidiSplashTool:
                 readback_hash = self._sudo(client, password, f"sha256sum {shlex.quote(remote_verify)}").split()[0].lower()
                 if readback_hash != expected_hash.lower():
                     raise RuntimeError(
-                        "Read-back hash does not match. Do not reboot. "
+                        "Read-back hash does not match. The printer will not be restarted. "
                         f"The original backup is at {backup_path} and {remote_backup} on the printer."
                     )
-                return {"hash": readback_hash, "backup": str(backup_path), "remote_backup": remote_backup}
+                self._log(f"Flash verified. SHA-256: {readback_hash}")
+                self._log(f"Keep the backup: {backup_path}")
             finally:
                 client.close()
-        def done(result):
-            self.flash_verified = True
-            self.reboot_button.configure(state="normal")
-            self._log(f"Flash verified. SHA-256: {result['hash']}")
-            self._log(f"Keep the backup: {result['backup']}")
-            self.status_var.set("Flash verified. Reboot only when you are ready to check the new splash.")
-            messagebox.showinfo("Flash verified", f"The partition matches the patched image.\n\nBackup: {result['backup']}", parent=self.root)
-        self.flash_verified = False
-        self._start_job("Backing up, flashing, and verifying", job, done)
 
-    def reboot_printer(self):
-        if not self.flash_verified:
-            messagebox.showinfo("Flash not verified", "Reboot is enabled only after a matching read-back hash.", parent=self.root)
-            return
-        if not messagebox.askyesno("Reboot Q2", "The flash has been verified. Reboot the printer now?", parent=self.root):
-            return
+            self._reboot_and_wait(address, username, password)
+            return {"hash": readback_hash, "backup": str(backup_path)}
+
+        def done(result):
+            self._log(f"Restart complete. Printer is reachable again. Backup: {result['backup']}")
+            self.status_var.set("Printer is back online. Check the new splash screen.")
+
+        self._start_job("Backing up, flashing, restarting, and reconnecting", job, done)
+
+    def _reboot_and_wait(self, address: str, username: str, password: str):
+        self._log("Sending restart request…")
+        client = self._connect(address, username, password)
         try:
-            address, username, password = self._connection()
-        except Exception as exc:
-            messagebox.showerror("Connection details", str(exc), parent=self.root)
-            return
-        def job():
-            client = self._connect(address, username, password)
+            stdin, _stdout, _stderr = client.exec_command("sudo -S -p '' reboot", timeout=15)
+            if password:
+                stdin.write(password + "\n")
+                stdin.flush()
+            stdin.channel.shutdown_write()
+        finally:
+            client.close()
+
+        timeout_seconds = 180
+        interval_seconds = 4
+        started = time.monotonic()
+        saw_disconnect = False
+        self._log("Waiting for the printer to restart and SSH to return (maximum 3 minutes)…")
+        while time.monotonic() - started < timeout_seconds:
             try:
-                stdin, stdout, stderr = client.exec_command("sudo -S -p '' reboot", timeout=15)
-                if password:
-                    stdin.write(password + "\n")
-                    stdin.flush()
-                stdin.channel.shutdown_write()
-                return True
-            finally:
-                client.close()
-        self._start_job("Sending reboot request", job, lambda _: self._set_status("Reboot request sent. Wait for the printer to return."))
+                probe = self._connect(address, username, password)
+                try:
+                    _stdin, stdout, _stderr = probe.exec_command("true", timeout=8)
+                    if stdout.channel.recv_exit_status() != 0:
+                        raise RuntimeError("SSH probe command failed")
+                finally:
+                    probe.close()
+                if saw_disconnect:
+                    self._log("SSH reconnected after the printer restarted.")
+                    return
+            except Exception:
+                if not saw_disconnect:
+                    self._log("Printer is restarting; waiting for SSH to disconnect and return…")
+                saw_disconnect = True
+            time.sleep(interval_seconds)
+
+        raise RuntimeError(
+            "Restart was requested, but SSH did not confirm that the printer went offline and returned within 3 minutes. "
+            "Check the printer manually; the splash flash was already verified."
+        )
 
 
 def main():
