@@ -27,11 +27,17 @@ The tested partition is exactly 9,437,184 bytes, with valid splash BMPs at the o
 
 The patching tools replace only the BMP pixel data. By default, they put the same artwork in both slots so the old image does not flash briefly before the main splash. You can also provide separate artwork for each slot.
 
-## Windows wizard
+## Option A: Wizard workflow (Windows and Linux)
 
 The graphical wizard can connect to the printer over SSH, download the current partition, preview both embedded images, choose artwork, and prepare a patched image. One click on **Back up, flash & restart** starts the backup, upload and hash checks, flash, read-back verification, and automatic reboot. It then reconnects over SSH to confirm the printer returned, with a three-minute timeout instead of waiting indefinitely. The backup is checked against the printer-side copy before flashing.
 
-Install Python 3.10 or newer. On Windows, make sure the Python installer includes **Tcl/Tk**. Then open PowerShell in this folder and run:
+Install Python 3.10 or newer. 
+
+On Windows, make sure the Python installer includes **Tcl/Tk**. 
+
+Extract the files to this folder.
+
+Then open PowerShell in this folder and run:
 
 ```powershell
 py -m pip install -r requirements.txt
@@ -42,7 +48,7 @@ Enter your printer's IP address, SSH user (usually `mks`), and password in the w
 
 ![Wizard screenshot](docs/images/screenshot-wizard.png)
 
-## Terminal workflow (Windows and Linux)
+## Option B: Terminal workflow (Windows and Linux)
 
 Install Python 3.10 or newer and the packages listed in `requirements.txt`. Linux users may also need their distribution's `python3-tk` package for the graphical wizard; the terminal tools do not need Tkinter.
 
@@ -116,7 +122,7 @@ Do not interrupt the write. If the read-back hash differs, do not reboot; invest
 
 ![Q2 boot splash original](docs/images/logo.bmp) ![Q2 boot splash artwork example](docs/images/example-splash.jpg)
 
-*Original boor splash and an example artwork included with permission from the project owner. It is cropped and resized to the panel's native 480 × 272 resolution before patching.*
+*Original boot splash and an example artwork included with permission from the project owner. It is cropped and resized to the panel's native 480 × 272 resolution before patching.*
 
 ## Included tools
 
