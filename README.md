@@ -31,7 +31,7 @@ The patching tools replace only the BMP pixel data. By default, they put the sam
 
 The wizard downloads and previews the two splash images, prepares a patched partition image, makes and checks a backup, flashes, verifies the read-back, restarts the printer, and reconnects over SSH. One click on **Back up, flash & restart** starts the full sequence. If checks fail, it stops; it will not restart unless the written data matches. Reconnection is limited to three minutes.
 
-Install Python 3.10 or newer and download the repository using **Code → Download ZIP**. Extract the ZIP to a folder.
+Windows users can download the standalone [QIDI-Q2-Splash-Tool.exe](https://github.com/JP-Reitsma/Qidi-Boot-Splash/releases/latest/download/QIDI-Q2-Splash-Tool.exe) from the [latest release](https://github.com/JP-Reitsma/Qidi-Boot-Splash/releases/latest); it does not require Python. Windows may show a SmartScreen warning because the executable is not code-signed.\n\nTo run the wizard from source, install Python 3.10 or newer and download the repository using **Code → Download ZIP**. Extract the ZIP to a folder.
 
 On Windows, use PowerShell in that folder:
 
