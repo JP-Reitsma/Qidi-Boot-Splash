@@ -4,9 +4,9 @@ Unofficial tools to inspect and replace the boot splash images on a QIDI Q2. The
 
 ## Hardware compatibility
 
-This project has been tested on one QIDI Q2 only. QIDI's public documentation does not identify the application-processor variant for every production revision, and this project has not verified other Q2 revisions or the Q2C. Do not assume that the same processor, partition layout, or splash offsets apply just because a printer is sold as a Q2.
+This project has been tested on one QIDI Q2. Other Q2 hardware or firmware revisions and the Q2C have not been verified. QIDI's public specifications do not list the application-processor and partition details for every production revision.
 
-Before using the tools on another printer, inspect it over SSH and compare its board model, storage layout, and exact partition size with the tested device:
+The tested partition was `/dev/mmcblk0p5`, exactly 9,437,184 bytes, with valid 480 × 272 splash BMPs at the offsets listed below. You can inspect a printer over SSH with these read-only commands:
 
 ```sh
 tr -d '\000' </proc/device-tree/model; echo
@@ -14,7 +14,7 @@ lsblk -b -o NAME,SIZE,TYPE,MOUNTPOINT
 sudo blockdev --getsize64 /dev/mmcblk0p5
 ```
 
-The tested partition is exactly 9,437,184 bytes, with valid splash BMPs at the offsets listed below. A matching size alone does not prove compatibility. If the board model, partition, size, or extracted BMP headers differ—or you cannot verify them—stop and do not flash. The wizard's structural checks are not a substitute for confirming the hardware and firmware revision.
+The wizard checks the partition size and BMP headers, verifies the upload and backup hashes, and compares a read-back hash after writing. These checks confirm the image structure and that the write completed as intended; they cannot guarantee that every hardware or firmware revision uses the same splash locations. If the partition size or BMP checks fail, stop and do not flash. The tested offsets and timing are observations from one Q2.
 
 ## What is in `p5.img`?
 
@@ -29,22 +29,25 @@ The patching tools replace only the BMP pixel data. By default, they put the sam
 
 ## Option A: Wizard workflow (Windows and Linux)
 
-The graphical wizard can connect to the printer over SSH, download the current partition, preview both embedded images, choose artwork, and prepare a patched image. One click on **Back up, flash & restart** starts the backup, upload and hash checks, flash, read-back verification, and automatic reboot. It then reconnects over SSH to confirm the printer returned, with a three-minute timeout instead of waiting indefinitely. The backup is checked against the printer-side copy before flashing.
+The wizard downloads and previews the two splash images, prepares a patched partition image, makes and checks a backup, flashes, verifies the read-back, restarts the printer, and reconnects over SSH. One click on **Back up, flash & restart** starts the full sequence. If checks fail, it stops; it will not restart unless the written data matches. Reconnection is limited to three minutes.
 
-Install Python 3.10 or newer. 
+Install Python 3.10 or newer and download the repository using **Code → Download ZIP**. Extract the ZIP to a folder.
 
-On Windows, make sure the Python installer includes **Tcl/Tk**. 
-
-Extract the files to this folder.
-
-Then open PowerShell in this folder and run:
+On Windows, use PowerShell in that folder:
 
 ```powershell
 py -m pip install -r requirements.txt
 py qidi_splash_tool.py
 ```
 
-Enter your printer's IP address, SSH user (usually `mks`), and password in the wizard. The password is held in memory only. When prompted about an SSH host key, compare its fingerprint through a trusted channel before accepting.
+On Linux, install `python3-tk` if needed, then run:
+
+```sh
+python3 -m pip install -r requirements.txt
+python3 qidi_splash_tool.py
+```
+
+Enter the printer's IP address, SSH user (usually `mks`), and password. The password is held in memory only. When prompted about an SSH host key, compare its fingerprint through a trusted channel before accepting.
 
 ![Wizard screenshot](docs/images/screenshot-wizard.png)
 
@@ -65,7 +68,7 @@ scp mks@<printer-ip>:/home/mks/p5_original.img ./p5.img
 Check that `p5.img` is exactly 9,437,184 bytes. Extract the two embedded images as separate preview files:
 
 ```sh
-python extract_rsce_bmps.py
+python extract_bmps.py
 ```
 
 The previews are written under `output/`. The source partition image remains a single file.
@@ -128,7 +131,7 @@ Do not interrupt the write. If the read-back hash differs, do not reboot; invest
 
 - `qidi_splash_tool.py` — graphical Windows/Linux wizard.
 - `extract_bmps.py` — finds BMP images embedded in a firmware image.
-- `extract_rsce_bmps.py` — extracts BMPs from the QIDI `RSCE` resource section.
+- `extract_rsce_bmps.py` — scans firmware images for BMPs after an `RSCE` resource section.
 - `patch_bootlogo.py` — replaces the two splash images.
 
 Firmware images, extracted BMP previews, generated outputs, backups, and other personal artwork are not included. Use a fresh partition image from your own printer. Do not assume the tested offsets or partition apply to another model or firmware version.
