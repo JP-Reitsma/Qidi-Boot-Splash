@@ -53,7 +53,7 @@ Enter the printer's IP address, SSH user (usually `mks`), and password. The pass
 
 ## Option B: Terminal workflow (Windows and Linux)
 
-Install Python 3.10 or newer and the packages listed in `requirements.txt`. Linux users may also need their distribution's `python3-tk` package for the graphical wizard; the terminal tools do not need Tkinter.
+Install Python 3.10 or newer and the packages listed in `requirements.txt`. The command-line tools do not need Tkinter.
 
 Replace `<printer-ip>` below with the printer's address. First open an interactive SSH session so `sudo` can ask for its password, make a backup, then download it:
 
@@ -65,7 +65,7 @@ exit
 scp mks@<printer-ip>:/home/mks/p5_original.img ./p5.img
 ```
 
-Check that `p5.img` is exactly 9,437,184 bytes. Extract the two embedded images as separate preview files:
+Check that `p5.img` is exactly 9,437,184 bytes. In the commands below, use `py` instead of `python` in PowerShell, or `python3` on Linux if `python` is unavailable. Extract the two embedded images as separate preview files:
 
 ```sh
 python extract_bmps.py
@@ -130,7 +130,7 @@ Do not interrupt the write. If the read-back hash differs, do not reboot; invest
 ## Included tools
 
 - `qidi_splash_tool.py` — graphical Windows/Linux wizard.
-- `extract_bmps.py` — finds BMP images embedded in a firmware image.
+- `extract_bmps.py` — finds BMP images embedded in a partition or firmware image.
 - `extract_rsce_bmps.py` — scans firmware images for BMPs after an `RSCE` resource section.
 - `patch_bootlogo.py` — replaces the two splash images.
 
